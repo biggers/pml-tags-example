@@ -3,41 +3,67 @@
 
 import sys
 from pprint import pprint as pp
-import cStringIO as cio
+import cStringIO as CIO
 import string
 import random
+import pdb
 
 from say import say, fmt, stdout
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
-def create_fn_atom(size=6):
+def creat_py_atom(size=6):
+    """ create a valid Python-id (for variables, fn-names) with length 'size'
+    """
     chars = string.ascii_lowercase
     digits = string.digits
     fn_atom = ''.join( random.choice(chars) )
-    return  fn_atom + ''.join( random.choice(chars + digits) for x in range(size-1) )
+    return  fn_atom + ''.join( random.choice(chars + digits + '_') for x in range(size-1) )
 
-print create_fn_atom(8)
+def main(args):
+    main_atom = 'ghost_func'    # creat_py_atom(8)
 
-with open('cis.pml', 'rb') as f:
-    soup = BeautifulSoup(f)
+    fn = args[1] if len(args) > 1 else 'cis.pml'
 
-buf_main = cio.StringIO()
-say.setfiles([stdout, buf_main])
+    with open(fn, 'rb') as f:
+        soup = BeautifulSoup(f)
 
-buf_pml = cio.StringIO()
+    buf_main = CIO.StringIO()
+    say.setfiles([stdout, buf_main])
 
-say( u'from pprint import pprint' )
-say( u'def main():' )
+    say( u'from pprint import pprint' )
+    say( u'import cStringIO as CIO')
+    say( u'def {main_atom}():' )
+    say( u'    plist = list()' )
 
-for pml_raw in soup.find_all('pml'):
-    # fn_atom = create_fn_atom(8)
-    # say("def {fn_atom}():")
-    buf_pml = cio.StringIO()
+    for pml_tag in soup.find_all('pml'):
+        # pdb.set_trace()
 
-    for l in pml_raw.get_text().split('\n'):
-        say(l)
+        bufc = CIO.StringIO()
+        #         return "
+        # <h3>Now, Good Bye...!</h3>
+        # "
+        for cld in pml_tag.children:
+            if isinstance(cld, Tag):     # Python code could have HTML tags!
+                bufc.write( repr(cld) )
+            else:
+                bufc.write( cld )
 
-    say( u'    pprint(pml)' )
-    # say( "{fn_atom}()" )
+        say( bufc.getvalue() )
+        say(u'    plist.append(pml)')
 
-print buf_main.getvalue()
+    say(u'    return plist')
+    # say( u'{main_atom}()' )
+
+    code = buf_main.getvalue()
+    print( code )
+    exec( code )
+
+    l = ghost_func()
+    # for pml_tag in soup.find_all('pml'):
+    #     pass
+
+    pp( [ item for item in l] )
+
+
+if __name__ == '__main__':
+    main(sys.argv)
