@@ -6,7 +6,11 @@
 
 <pml>
     def f():
-        return "<h2>Say Hello!</h2>"
+        b = 2
+        if b > 2:
+            return "<h2>Say Hello!</h2>"
+        elif b < 3:
+            return "<h2>Say NonnyNo!</h2>"
     pml = f()
 </pml>
 
@@ -19,4 +23,4 @@
     pml = g()
 </pml>
 
-<html>
+</html>

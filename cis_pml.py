@@ -1,27 +1,44 @@
 #!/home/gtd/cis_test_proj/bin/python
 # -*- coding: utf-8 -*-
 
+import re
 import sys
-from pprint import pprint as pp
-import cStringIO as CIO
 import string
 import random
-import pdb
+import cStringIO as CIO
+from pprint import pprint
 
 from say import say, fmt, stdout
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, Tag, Comment
 
-def creat_py_atom(size=6):
-    """ create a valid Python-id (for variables, fn-names) with length 'size'
-    """
-    chars = string.ascii_lowercase
-    digits = string.digits
-    fn_atom = ''.join( random.choice(chars) )
-    return  fn_atom + ''.join( random.choice(chars + digits + '_') for x in range(size-1) )
+""" HOW.TO
+PROJ=/usr/local/src/cis_test_proj
+virtualenv $PROJ
 
-def main(args):
-    main_atom = 'ghost_func'    # creat_py_atom(8)
+cd $PROJ
+. bin/activate
+pip install beautifulsoup4 say
 
+bin/python cis_pml.py
+"""
+_main_atom = 'pml_code_func'
+
+_comment_re = r"""(<!--pml-\d+-->)"""
+_comment_re = re.compile(_comment_re)
+
+class SubHandler(object):
+    def __init__(self, results):
+        self.count = 0
+        self.results = results
+
+    def __call__(self, match):
+        pml_block = self.results[ self.count ]
+        content = """{}\n{}""".format( match.groups()[0], pml_block )
+        self.count += 1
+        return content
+
+def main(args, debug=True):
+    global results
     fn = args[1] if len(args) > 1 else 'cis.pml'
 
     with open(fn, 'rb') as f:
@@ -32,12 +49,10 @@ def main(args):
 
     say( u'from pprint import pprint' )
     say( u'import cStringIO as CIO')
-    say( u'def {main_atom}():' )
+    say( u'def {_main_atom}():' )
     say( u'    plist = list()' )
 
-    for pml_tag in soup.find_all('pml'):
-        # pdb.set_trace()
-
+    for index, pml_tag in enumerate( soup.find_all('pml') ):
         bufc = CIO.StringIO()
         #         return "
         # <h3>Now, Good Bye...!</h3>
@@ -49,21 +64,31 @@ def main(args):
                 bufc.write( cld )
 
         say( bufc.getvalue() )
-        say(u'    plist.append(pml)')
+        bufc.close()
+        say(u'    plist.append(pml)')    # append that <pml/> Py code ...
+
+        # replace <pml/> ==>> <div><!-- pml-N --></div> - for Re.sub
+        div = soup.new_tag("div")
+        div.string = Comment( "pml-{}".format(index) )
+        pml_tag.replace_with( div )
 
     say(u'    return plist')
-    # say( u'{main_atom}()' )
 
     code = buf_main.getvalue()
-    print( code )
-    exec( code )
+    if debug:
+        print( code )
 
-    l = ghost_func()
-    # for pml_tag in soup.find_all('pml'):
-    #     pass
+    exec( code )                         # "execute" (to scope-in) the Py prog
+    results = pml_code_func()            # run the Py-program from <pml> blocks
+    if debug:
+        pprint( [ item for item in results] )
 
-    pp( [ item for item in l] )
+    shtml = soup.prettify(formatter="minimal")
+    if debug:
+        print( shtml )
 
+    shtml = _comment_re.sub( SubHandler(results), shtml )
+    print( shtml )
 
 if __name__ == '__main__':
     main(sys.argv)
