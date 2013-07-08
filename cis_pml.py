@@ -1,4 +1,4 @@
-#!/home/gtd/cis_test_proj/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import re
@@ -10,7 +10,6 @@ from pprint import pprint
 
 from say import say, fmt, stdout
 from bs4 import BeautifulSoup, Tag, Comment
-import autopep8
 
 _main_atom = 'pml_code_func'
 
