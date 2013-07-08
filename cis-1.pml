@@ -5,7 +5,6 @@
 <p>This is an example of a pml file</p>
 
 <pml>
-
     def f():
         b = 2
         if b > 2:
@@ -19,9 +18,9 @@
 <h2>Don't Go!</h2>
 
 <pml>
-    def g():
-        return "<h3>Now, Good Bye...!</h3>"
-    pml = g()
+  def g():
+      return "<h3>Now, Good Bye...!</h3>"
+  pml = g()
 </pml>
 
 </html>
