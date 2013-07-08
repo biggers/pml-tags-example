@@ -5,28 +5,21 @@ import re
 import sys
 import string
 import random
-import cStringIO as CIO
+import StringIO as SIO
 from pprint import pprint
 
 from say import say, fmt, stdout
 from bs4 import BeautifulSoup, Tag, Comment
+import autopep8
 
-""" HOW.TO
-PROJ=/usr/local/src/cis_test_proj
-virtualenv $PROJ
-
-cd $PROJ
-. bin/activate
-pip install beautifulsoup4 say
-
-bin/python cis_pml.py
-"""
 _main_atom = 'pml_code_func'
 
 _comment_re = r"""(<!--pml-\d+-->)"""
 _comment_re = re.compile(_comment_re)
 
 class SubHandler(object):
+    """ re.sub handler Class, to insert Py-run results from <pml/> into HTML-doc
+    """
     def __init__(self, results):
         self.count = 0
         self.results = results
@@ -38,34 +31,31 @@ class SubHandler(object):
         return content
 
 def main(args, debug=True):
-    global results
     fn = args[1] if len(args) > 1 else 'cis.pml'
 
     with open(fn, 'rb') as f:
         soup = BeautifulSoup(f)
 
-    buf_main = CIO.StringIO()
+    buf_main = SIO.StringIO()
     say.setfiles([stdout, buf_main])
 
-    say( u'from pprint import pprint' )
-    say( u'import cStringIO as CIO')
     say( u'def {_main_atom}():' )
     say( u'    plist = list()' )
 
     for index, pml_tag in enumerate( soup.find_all('pml') ):
-        bufc = CIO.StringIO()
+        bufc = SIO.StringIO()
         #         return "
         # <h3>Now, Good Bye...!</h3>
         # "
         for cld in pml_tag.children:
-            if isinstance(cld, Tag):     # Python code could have HTML tags!
+            if isinstance(cld, Tag):     # BS4 parses HTML tags in <pml/>!
                 bufc.write( repr(cld) )
             else:
                 bufc.write( cld )
 
         say( bufc.getvalue() )
         bufc.close()
-        say(u'    plist.append(pml)')    # append that <pml/> Py code ...
+        say(u'    plist.append(pml)')   # append that <pml/> Py code ...
 
         # replace <pml/> ==>> <div><!-- pml-N --></div> - for Re.sub
         div = soup.new_tag("div")
@@ -74,19 +64,19 @@ def main(args, debug=True):
 
     say(u'    return plist')
 
-    code = buf_main.getvalue()
-    if debug:
-        print( code )
+    raw_code = buf_main.getvalue()
+    clean_code = raw_code
+    buf_main.close()
 
-    exec( code )                         # "execute" (to scope-in) the Py prog
+    if debug:
+        print( clean_code )
+    exec( clean_code )                   # "execute" (to scope-in) the Py prog
+
     results = pml_code_func()            # run the Py-program from <pml> blocks
     if debug:
         pprint( [ item for item in results] )
 
     shtml = soup.prettify(formatter="minimal")
-    if debug:
-        print( shtml )
-
     shtml = _comment_re.sub( SubHandler(results), shtml )
     print( shtml )
 

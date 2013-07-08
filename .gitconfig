@@ -1,0 +1,62 @@
+[gui]
+  recentrepo = /home/mbiggers/git-trial
+
+[user]
+  name = Mark Biggers
+  email = biggers@utsl.com
+
+[core]
+  whitespace=fix,-indent-with-non-tab,trailing-space
+  autocrlf = input
+  safecrlf = false
+
+[diff "odf"]
+  textconv=odt2txt
+
+[color]
+  ui = auto
+[color "branch"]
+  current = yellow reverse
+  local = yellow
+  remote = green
+[color "diff_xx"]
+  meta = yellow bold
+  frag = magenta bold
+  old = red bold
+  nnew = green bold
+  whitespace = red reverse
+[color "status"]
+  added = yellow
+  changed = green
+  untracked = cyan
+
+[alias]
+  ci = commit
+  rvt = checkout
+  df = diff
+  dc = diff --cached
+  st = status
+  br = branch
+  lg = log -p
+  lol = log --graph --decorate --pretty=oneline --abbrev-commit
+  lola = log --graph --decorate --pretty=oneline --abbrev-commit --all
+  ls = ls-files
+
+  unstage = reset HEAD --
+
+  # Show files ignored by git:
+  ign = ls-files -o -i --exclude-standard
+
+  # SVN repo, git-svn pull & push
+  spull = !git svn fetch && git svn rebase
+  spush = !git-svn dcommit
+
+[branch]
+  autosetupmerge = true
+
+[merge]
+        tool = ediff
+
+[mergetool "ediff"]
+        cmd = /usr/local/bin/emacs-mergetool.sh $LOCAL $REMOTE $MERGED $BASE
+        trustExitCode = true
