@@ -3,8 +3,6 @@
 
 import re
 import sys
-import string
-import random
 import StringIO as SIO
 from pprint import pprint
 
@@ -15,6 +13,32 @@ _main_atom = 'pml_code_func'
 
 _comment_re = r"""(<!--pml-\d+-->)"""
 _comment_re = re.compile(_comment_re)
+
+class LeadingIndent(object):
+    """ keep state on PML.#0 leading indent, use to adjust
+        other PML "code blocks" to that indentation-level
+    """
+    def __init__(self, first_pml):
+        self.first_indent = self.get_pml_indent(first_pml)
+        self.first_pml = first_pml
+
+    def get_pml_indent(self, pml_block):
+        m = re.search('(\n)(\s+)(\S+)', pml_block)
+        return  len( m.group(2) )
+
+    def sub_whitespace(self, m):
+        ws = ' ' * self.first_indent
+        adj_pml = m.group(1) + ws + m.group(3)
+        return adj_pml
+
+    def __call__(self, next_pml):
+        if next_pml == self.first_pml:
+            return self.first_pml
+        self.leading = self.get_pml_indent(next_pml)
+        re_range = '{{{0},{0}}}'.format(self.leading)
+        pml_adj = re.sub('(\n*)([ \t]{})([^\n]+)'.format(re_range),
+                         self.sub_whitespace, next_pml) #flags=re.DEBUG
+        return pml_adj
 
 class SubHandler(object):
     """ re.sub handler Class, to insert Py-run results from <pml/> into HTML-doc
@@ -29,18 +53,19 @@ class SubHandler(object):
         self.count += 1
         return content
 
-def main(args, debug=True):
+def main(args, debug=False):
     fn = args[1] if len(args) > 1 else 'cis.pml'
 
     with open(fn, 'rb') as f:
         soup = BeautifulSoup(f)
 
     buf_main = SIO.StringIO()
-    say.setfiles([stdout, buf_main])
+    say.setfiles([buf_main])
 
     say( u'def {_main_atom}():' )
     say( u'    plist = list()' )
 
+    adjuster = None
     for index, pml_tag in enumerate( soup.find_all('pml') ):
         bufc = SIO.StringIO()
         #         return "
@@ -50,6 +75,12 @@ def main(args, debug=True):
             if isinstance(cld, Tag):     # BS4 parses HTML tags in <pml/>!
                 bufc.write( repr(cld) )
             else:
+                if index == 0:            # we get "leading indent" from PML-0
+                    if adjuster == None:
+                        adjuster = LeadingIndent(cld)
+                else:
+                    cld = adjuster( cld )
+
                 bufc.write( cld )
 
         say( bufc.getvalue() )
@@ -63,16 +94,17 @@ def main(args, debug=True):
 
     say(u'    return plist')
 
-    raw_code = buf_main.getvalue()
-    clean_code = raw_code
+    the_code = buf_main.getvalue()
+    with open("out.py", 'wb') as fp:
+        fp.write(the_code)
     buf_main.close()
 
-    if debug:
-        print( clean_code )
-    exec( clean_code )                   # "execute" (to scope-in) the Py prog
+    if debug == True:
+        print( the_code )
+    exec( the_code )                     # "execute" (to scope-in) the Py prog
 
     results = pml_code_func()            # run the Py-program from <pml> blocks
-    if debug:
+    if debug == True:
         pprint( [ item for item in results] )
 
     shtml = soup.prettify(formatter="minimal")
