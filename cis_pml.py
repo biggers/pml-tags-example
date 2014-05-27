@@ -6,7 +6,7 @@ import sys
 import StringIO as SIO
 from pprint import pprint
 
-from say import say, fmt, stdout
+from say import say, fmt
 from bs4 import BeautifulSoup, Tag, Comment
 
 _main_atom = 'pml_code_func'
@@ -23,7 +23,8 @@ class LeadingIndent(object):
         self.first_pml = first_pml
 
     def get_pml_indent(self, pml_block):
-        m = re.search('(\n)(\s+)(\S+)', pml_block)
+        # NOTE: B-Soup doesn't throw away newlines, from blank-lines!
+        m = re.search('(\n+)(\s+)(\S+)', pml_block)
         return  len( m.group(2) )
 
     def sub_whitespace(self, m):

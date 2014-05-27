@@ -9,28 +9,26 @@
 .ONESHELL:
 
 PROJ = pml-tags-example
+#VIRTENV_PATH = /usr/local/encap/Python-2.7.6/bin
+VIRTENV_PATH = /usr/bin
 
-#.PHONY: all
+.PHONY: all git_clone creat_virtenv pip_install
+
 all: creat_virtenv pip_install
 
 # NOTE: Who's on first: the chicken or the egg?
 # ... need this Makefile, but it's in the git-clone!
-.PHONY: git_clone
 git_clone: ${PROJ}/cis_pml.py
 
 ${PROJ}/cis_pml.py:
 	git clone https://github.com/biggers/pml-tags-example.git
 
-
-.PHONY: creat_virtenv
 creat_virtenv: ${PROJ}/bin/pip
 
 ${PROJ}/bin/pip:
-	virtualenv ${PROJ}
+	${VIRTENV_PATH}/virtualenv ${PROJ}
 
-.PHONY: pip_install
 pip_install: ${PROJ}/lib/python2.7/site-packages/say/__init__.py
 
 ${PROJ}/lib/python2.7/site-packages/say/__init__.py:
-	${PROJ}/bin/pip install beautifulsoup4 say # bpython
-
+	cd ${PROJ}; bin/pip install beautifulsoup4 say
